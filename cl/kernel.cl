@@ -7,6 +7,7 @@
 void increment_le(const __generic uchar* inp, size_t inc, uchar* out) {
     unsigned int carry = 0;
 
+#pragma unroll
     for (size_t i = 0; i < 32; i++) {
         // Extract byte from inc (LSB first)
         unsigned int inc_byte = (i < sizeof(size_t)) ? ((inc >> (i * 8)) & 0xFF) : 0;
@@ -23,6 +24,7 @@ void increment_le(const __generic uchar* inp, size_t inc, uchar* out) {
 void increment_be(const __generic uchar* inp, size_t inc, uchar* out) {
     unsigned int carry = 0;
 
+#pragma unroll
     for (int i = 31; i >= 0; i--) {
         // Calculate which byte of inc to use
         size_t byte_idx = 31 - i;
@@ -59,9 +61,11 @@ __kernel void generate_vanity_addresses(__global const uchar* base_seed,
     ed25519_create_keypair(local_public_key, local_private_key, local_seed);
 
     // Force privkey to be seed || pubkey format (to match Go convention)
+#pragma unroll
     for (int i = 0; i < 32; i++) {
         local_private_key[i] = local_seed[i];
     }
+#pragma unroll
     for (int i = 0; i < 32; i++) {
         local_private_key[32 + i] = local_public_key[i];
     }
@@ -81,7 +85,8 @@ __kernel void generate_vanity_addresses(__global const uchar* base_seed,
     if (match) {
         uint idx = atomic_inc(result_count);  // Use idx to avoid overflow math
         if (idx < 1024) {                     // Safety limit
-            // Write ONLY the 64-byte private key (seed || pubkey)
+                                              // Write ONLY the 64-byte private key (seed || pubkey)
+#pragma unroll
             for (int i = 0; i < 64; i++) {
                 results[(idx * 64) + i] = local_private_key[i];
             }

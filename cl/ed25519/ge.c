@@ -25,10 +25,12 @@ static void slide(signed char* r, const unsigned char* a) {
     int b;
     int k;
 
+#pragma unroll
     for (i = 0; i < 256; ++i) {
         r[i] = 1 & (a[i >> 3] >> (i & 7));
     }
 
+#pragma unroll
     for (i = 0; i < 256; ++i)
         if (r[i]) {
             for (b = 1; b <= 6 && i + b < 256; ++b) {
@@ -375,6 +377,7 @@ void ge_scalarmult_base(ge_p3* h, const unsigned char* a) {
     /* e[63] is between 0 and 7 */
     carry = 0;
 
+#pragma unroll
     for (i = 0; i < 63; ++i) {
         e[i] += carry;
         carry = e[i] + 8;

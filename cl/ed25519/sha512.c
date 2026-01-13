@@ -82,16 +82,19 @@ static int sha512_compress(sha512_context* md, unsigned char* buf) {
     int i;
 
     /* copy state into S */
+#pragma unroll
     for (i = 0; i < 8; i++) {
         S[i] = md->state[i];
     }
 
     /* copy the state into 1024-bits into W[0..15] */
+#pragma unroll
     for (i = 0; i < 16; i++) {
         LOAD64H(W[i], buf + (8 * i));
     }
 
     /* fill W[16..79] */
+#pragma unroll
     for (i = 16; i < 80; i++) {
         W[i] = Gamma1(W[i - 2]) + W[i - 7] + Gamma0(W[i - 15]) + W[i - 16];
     }
