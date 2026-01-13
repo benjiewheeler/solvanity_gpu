@@ -1,0 +1,90 @@
+#include "base58.c"
+#include "ed25519/fe.c"
+#include "ed25519/ge.c"
+#include "ed25519/keypair.c"
+#include "ed25519/sha512.c"
+
+void increment_le(const __generic uchar* inp, size_t inc, uchar* out) {
+    unsigned int carry = 0;
+
+    for (size_t i = 0; i < 32; i++) {
+        // Extract byte from inc (LSB first)
+        unsigned int inc_byte = (i < sizeof(size_t)) ? ((inc >> (i * 8)) & 0xFF) : 0;
+
+        // Add input byte + increment byte + carry
+        unsigned int sum = inp[i] + inc_byte + carry;
+
+        // Store result and propagate carry
+        out[i] = (uchar)(sum & 0xFF);
+        carry = sum >> 8;
+    }
+}
+
+void increment_be(const __generic uchar* inp, size_t inc, uchar* out) {
+    unsigned int carry = 0;
+
+    for (int i = 31; i >= 0; i--) {
+        // Calculate which byte of inc to use
+        size_t byte_idx = 31 - i;
+        unsigned int inc_byte = (byte_idx < sizeof(size_t)) ? ((inc >> (byte_idx * 8)) & 0xFF) : 0;
+
+        // Add input byte + increment byte + carry
+        unsigned int sum = inp[i] + inc_byte + carry;
+
+        // Store result and propagate carry
+        out[i] = (uchar)(sum & 0xFF);
+        carry = sum >> 8;
+    }
+}
+
+void generate_seed(const __generic uchar* seed, size_t id, uchar* out) {
+    increment_be(seed, id, out);
+}
+
+__kernel void generate_vanity_addresses(__global const uchar* base_seed,
+                                        __global uchar* results,
+                                        __global uint* result_count,
+                                        uint prefix_len,
+                                        __constant uchar* prefix_chars) {
+    size_t gid = get_global_id(0);
+    uchar local_seed[32];
+    uchar local_public_key[32];
+    uchar local_private_key[64];  // Will be seed || pubkey
+    char local_addr_b58[45];
+
+    // generate the local seed from the base seed and the global id
+    generate_seed(base_seed, gid, local_seed);
+
+    // generate the public ed25519 key
+    ed25519_create_keypair(local_public_key, local_private_key, local_seed);
+
+    // Force privkey to be seed || pubkey format (to match Go convention)
+    for (int i = 0; i < 32; i++) {
+        local_private_key[i] = local_seed[i];
+    }
+    for (int i = 0; i < 32; i++) {
+        local_private_key[32 + i] = local_public_key[i];
+    }
+
+    // encode the public key in base58
+    size_t local_addr_b58_len = base58_encode((char*)local_public_key, local_addr_b58);
+
+    // Check if addr matches prefix
+    bool match = true;
+    for (uint i = 0; i < prefix_len; i++) {
+        if ((uchar)local_addr_b58[i] != prefix_chars[i]) {  // uchar cast for comparison
+            match = false;
+            break;
+        }
+    }
+
+    if (match) {
+        uint idx = atomic_inc(result_count);  // Use idx to avoid overflow math
+        if (idx < 1024) {                     // Safety limit
+            // Write ONLY the 64-byte private key (seed || pubkey)
+            for (int i = 0; i < 64; i++) {
+                results[(idx * 64) + i] = local_private_key[i];
+            }
+        }
+    }
+}
