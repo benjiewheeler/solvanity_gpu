@@ -130,6 +130,32 @@ __kernel void generate_vanity_addresses(__global const uchar* base_seed,
             match = only_letters(local_addr_b58, local_addr_b58_len);
             break;
 
+        case 12:
+            match = has_repeating_prefix(local_addr_b58, word_len, false);
+            break;
+
+        case 13:
+            match = has_repeating_prefix(local_addr_b58, word_len, true);
+            break;
+
+        case 14:
+            match = has_repeating_suffix(local_addr_b58, local_addr_b58_len, word_len, false);
+            break;
+
+        case 15:
+            match = has_repeating_suffix(local_addr_b58, local_addr_b58_len, word_len, true);
+            break;
+
+        case 16:
+            match = has_repeating_prefix(local_addr_b58, word_len, false) ||
+                    has_repeating_suffix(local_addr_b58, local_addr_b58_len, word_len, false);
+            break;
+
+        case 17:
+            match = has_repeating_prefix(local_addr_b58, word_len, true) ||
+                    has_repeating_suffix(local_addr_b58, local_addr_b58_len, word_len, true);
+            break;
+
         default:
             return;
     }

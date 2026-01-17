@@ -110,3 +110,50 @@ bool only_letters(const char* addr, uint addr_len) {
     return true;
 }
 
+bool has_repeating_prefix(const char* addr, uint prefix_len, bool ignore_case) {
+    if (prefix_len == 0)
+        return true;
+
+    uchar first_char = (uchar)addr[0];
+    uchar first_char_lower = first_char >= 'A' && first_char <= 'Z' ? first_char + 32 : first_char;
+
+    for (uint i = 1; i < prefix_len; i++) {
+        uchar addr_c = (uchar)addr[i];
+
+        if (ignore_case) {
+            uchar addr_lower = (addr_c >= 'A' && addr_c <= 'Z') ? addr_c + 32 : addr_c;
+
+            if (addr_lower != first_char_lower)
+                return false;
+        } else {
+            if (addr_c != first_char)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool has_repeating_suffix(const char* addr, uint addr_len, uint suffix_len, bool ignore_case) {
+    if (suffix_len == 0)
+        return true;
+
+    uchar last_char = (uchar)addr[addr_len - 1];
+    uchar last_char_lower = last_char >= 'A' && last_char <= 'Z' ? last_char + 32 : last_char;
+
+    for (uint i = 1; i < suffix_len; i++) {
+        uchar addr_c = (uchar)addr[addr_len - 1 - i];
+
+        if (ignore_case) {
+            uchar addr_lower = (addr_c >= 'A' && addr_c <= 'Z') ? addr_c + 32 : addr_c;
+
+            if (addr_lower != last_char_lower)
+                return false;
+        } else {
+            if (addr_c != last_char)
+                return false;
+        }
+    }
+
+    return true;
+}
