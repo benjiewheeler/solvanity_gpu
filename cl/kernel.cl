@@ -1,4 +1,4 @@
-#include "base58.c"
+#include "base58/base58.c"
 #include "ed25519/fe.c"
 #include "ed25519/ge.c"
 #include "ed25519/keypair.c"
