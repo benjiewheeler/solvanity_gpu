@@ -3,6 +3,7 @@
 #include "ed25519/ge.c"
 #include "ed25519/keypair.c"
 #include "ed25519/sha512.c"
+#include "match.c"
 
 void increment_le(const __generic uchar* inp, size_t inc, uchar* out) {
     unsigned int carry = 0;
@@ -40,14 +41,17 @@ void increment_be(const __generic uchar* inp, size_t inc, uchar* out) {
 }
 
 void generate_seed(const __generic uchar* seed, size_t id, uchar* out) {
+    // Increment the seed by the global id
+    // using BE just because
     increment_be(seed, id, out);
 }
 
 __kernel void generate_vanity_addresses(__global const uchar* base_seed,
                                         __global uchar* results,
                                         __global uint* result_count,
-                                        uint prefix_len,
-                                        __constant uchar* prefix_chars) {
+                                        uint match_mode,
+                                        __constant uchar* word_chars,
+                                        uint word_len) {
     size_t gid = get_global_id(0);
     uchar local_seed[32];
     uchar local_public_key[32];
@@ -73,19 +77,43 @@ __kernel void generate_vanity_addresses(__global const uchar* base_seed,
     // encode the public key in base58
     size_t local_addr_b58_len = base58_encode((char*)local_public_key, local_addr_b58);
 
-    // Check if addr matches prefix
-    bool match = true;
-    for (uint i = 0; i < prefix_len; i++) {
-        if ((uchar)local_addr_b58[i] != prefix_chars[i]) {  // uchar cast for comparison
-            match = false;
+    bool match = false;
+
+    switch (match_mode) {
+        case 0:
+            match = has_prefix(local_addr_b58, word_chars, word_len, false);
             break;
-        }
+
+        case 1:
+            match = has_prefix(local_addr_b58, word_chars, word_len, true);
+            break;
+
+        case 2:
+            match = has_suffix(local_addr_b58, local_addr_b58_len, word_chars, word_len, false);
+            break;
+
+        case 3:
+            match = has_suffix(local_addr_b58, local_addr_b58_len, word_chars, word_len, true);
+            break;
+
+        case 4:
+            match = has_prefix(local_addr_b58, word_chars, word_len, false) ||
+                    has_suffix(local_addr_b58, local_addr_b58_len, word_chars, word_len, false);
+            break;
+
+        case 5:
+            match = has_prefix(local_addr_b58, word_chars, word_len, true) ||
+                    has_suffix(local_addr_b58, local_addr_b58_len, word_chars, word_len, true);
+            break;
+
+        default:
+            return;
     }
 
     if (match) {
-        uint idx = atomic_inc(result_count);  // Use idx to avoid overflow math
-        if (idx < 1024) {                     // Safety limit
-                                              // Write ONLY the 64-byte private key (seed || pubkey)
+        uint idx = atomic_inc(result_count);
+        if (idx < 1024) {  // Safety limit
+                           // Write ONLY the 64-byte private key (seed || pubkey)
 #pragma unroll
             for (int i = 0; i < 64; i++) {
                 results[(idx * 64) + i] = local_private_key[i];
