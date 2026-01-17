@@ -115,7 +115,9 @@ def print_message(match_mode=0, word="", limit=1):
         case 16 | 17:
             match_type = f"starting or ending with {len(word)} repeating characters{' (case insensitive)' if match_mode == 17 else ''}"
 
+    click.echo("-" * 80)
     click.echo(f"Grinding for {limit} keys {match_type}")
+    click.echo("-" * 80)
 
 
 def write_key(privkey, output_dir):
@@ -211,7 +213,7 @@ def generate_vanity_addresses(match_mode=0, word="", limit=1, output_dir="./keys
     kernel.set_arg(5, word_len)
 
     print_message(match_mode, word, limit)
-    click.echo(f"  >> Launching {global_work_size:,} work-items with {local_work_size:,} threads per work-item...")
+    click.echo(f"Launching {global_work_size:,} work-items with {local_work_size:,} threads per work-item...")
     click.echo()
 
     start_time = time.time()
