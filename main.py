@@ -135,6 +135,45 @@ def write_key(privkey, output_dir):
     txt_file_path.write_text(priv_b58)
 
 
+def validate_arguments(mode, word, length, limit, output_dir, global_work_size, local_work_size):
+    # validate mode
+    if mode is None or mode < 0 or mode > 17:
+        click.echo("Invalid --mode", err=True)
+        help([])
+        exit(1)
+
+    # validate word
+    if mode in [0, 1, 2, 3, 4, 5] and (word is None or len(word) == 0):
+        click.echo("Empty --word for prefix/suffix match mode", err=True)
+        exit(1)
+
+    # validate word characters
+    if mode in [0, 1, 2, 3, 4, 5]:
+        for c in word:
+            alphabet_str = alphabet.decode("utf-8")
+            char = c.lower() if mode in [1, 3, 5] else c
+            charset = alphabet_str.lower() if mode in [1, 3, 5] else alphabet_str
+            if char not in charset:
+                click.echo(f"Invalid character in --word: {c}", err=True)
+                exit(1)
+
+    # validate length
+    if mode in [12, 13, 14, 15, 16, 17]:
+        if length is None or length < 0:
+            click.echo("Word --length too short for repeating prefix/suffix match mode", err=True)
+            exit(1)
+
+    # validate global work size
+    if global_work_size < 0 or global_work_size & (global_work_size - 1) != 0:
+        click.echo("Invalid --global-work-size, must be a power of 2", err=True)
+        exit(1)
+
+    # validate local work size
+    if local_work_size < 0 or local_work_size & (local_work_size - 1) != 0 or local_work_size > global_work_size:
+        click.echo("Invalid --local-work-size, must be a power of 2, and less than --global-work-size", err=True)
+        exit(1)
+
+
 def generate_vanity_addresses(match_mode=0, word="", limit=1, output_dir="./keys", global_work_size=65536, local_work_size=256):
     device = select_device()
     ctx, queue = initiate_context(device)
@@ -245,53 +284,16 @@ def main():
 def grind(mode, word, length, limit, output_dir, global_work_size, local_work_size):
     """Grind for vanity keypairs"""
 
-    # validate mode
-    if mode is None or mode < 0 or mode > 17:
-        click.echo("Invalid --mode", err=True)
-        help([])
-        exit(1)
+    validate_arguments(mode, word, length, limit, output_dir, global_work_size, local_work_size)
 
-    # validate word
-    if mode in [0, 1, 2, 3, 4, 5] and (word is None or len(word) == 0):
-        click.echo("Empty --word for prefix/suffix match mode", err=True)
-        exit(1)
-
-    # validate word in case sensitive modes
-    if mode in [0, 2, 4]:
-        for c in word:
-            if c not in alphabet.decode("utf-8"):
-                click.echo(f"Invalid character in --word: {c}", err=True)
-                exit(1)
-
-    # validate word in case insensitive modes
-    if mode in [1, 3, 5]:
-        for c in word:
-            if c.lower() not in alphabet.decode("utf-8").lower():
-                click.echo(f"Invalid character in --word: {c}", err=True)
-                exit(1)
+    if mode in [6, 7, 8, 9, 10, 11]:
+        # make a dummy word for these modes
+        word = "a"
 
     # validate length
     if mode in [12, 13, 14, 15, 16, 17]:
-        if length is None:
-            click.echo("Empty --length for repeating prefix/suffix match mode", err=True)
-            exit(1)
-
-        if length < 2:
-            click.echo("Word --length too short for repeating prefix/suffix match mode", err=True)
-            exit(1)
-
         # make a dummy word with the specified length
         word = "a" * length
-
-    # validate global work size
-    if global_work_size < 0 or global_work_size & (global_work_size - 1) != 0:
-        click.echo("Invalid --global-work-size, must be a power of 2", err=True)
-        exit(1)
-
-    # validate local work size
-    if local_work_size < 0 or local_work_size & (local_work_size - 1) != 0 or local_work_size > global_work_size:
-        click.echo("Invalid --local-work-size, must be a power of 2, and less than --global-work-size", err=True)
-        exit(1)
 
     generate_vanity_addresses(
         match_mode=mode,
