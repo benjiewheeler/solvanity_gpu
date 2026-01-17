@@ -106,6 +106,30 @@ __kernel void generate_vanity_addresses(__global const uchar* base_seed,
                     has_suffix(local_addr_b58, local_addr_b58_len, word_chars, word_len, true);
             break;
 
+        case 6:
+            match = only_uppercase(local_addr_b58, local_addr_b58_len);
+            break;
+
+        case 7:
+            match = only_lowercase(local_addr_b58, local_addr_b58_len);
+            break;
+
+        case 8:
+            match = only_digits(local_addr_b58, local_addr_b58_len);
+            break;
+
+        case 9:
+            match = only_digits_upper(local_addr_b58, local_addr_b58_len);
+            break;
+
+        case 10:
+            match = only_digits_lower(local_addr_b58, local_addr_b58_len);
+            break;
+
+        case 11:
+            match = only_letters(local_addr_b58, local_addr_b58_len);
+            break;
+
         default:
             return;
     }

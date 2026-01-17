@@ -44,3 +44,69 @@ bool has_suffix(const char* addr, uint addr_len, __constant uchar* suffix_chars,
     return true;
 }
 
+bool only_uppercase(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (c < 'A' || c > 'Z')
+            return false;
+    }
+
+    return true;
+}
+
+bool only_lowercase(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (c < 'a' || c > 'z')
+            return false;
+    }
+
+    return true;
+}
+
+bool only_digits(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (c < '0' || c > '9')
+            return false;
+    }
+
+    return true;
+}
+
+bool only_digits_upper(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')))
+            return false;
+    }
+
+    return true;
+}
+
+bool only_digits_lower(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z')))
+            return false;
+    }
+
+    return true;
+}
+
+bool only_letters(const char* addr, uint addr_len) {
+    for (uint i = 0; i < addr_len; i++) {
+        uchar c = (uchar)addr[i];
+
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')))
+            return false;
+    }
+
+    return true;
+}
+
